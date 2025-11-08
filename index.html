@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador Sintáctico LR(1) Interactivo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #312e81;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        .input-string {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 16px 24px;
+            border: none;
+            background: white;
+            color: #6b7280;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            background: #f9fafb;
+        }
+
+        .tab.active {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .tab-content {
+            padding: 30px;
+        }
+
+        .tab-panel {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .grammar-list {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .grammar-item {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .grammar-item .production-id {
+            color: #4f46e5;
+            font-weight: bold;
+        }
+
+        .info-box {
+            margin-top: 24px;
+            padding: 16px;
+            background: #dbeafe;
+            border: 2px solid #93c5fd;
+            border-radius: 8px;
+            color: #1e40af;
+        }
+
+        .warning-box {
+            margin-top: 24px;
+            padding: 16px;
+            background: #fef3c7;
+            border: 2px solid #fcd34d;
+            border-radius: 8px;
+            color: #92400e;
+        }
+
+        .states-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .state-card {
+            background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+            border: 2px solid #c7d2fe;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .state-card h3 {
+            color: #312e81;
+            margin-bottom: 16px;
+            font-size: 1.2rem;
+        }
+
+        .state-item {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            background: white;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            color: #374151;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        thead tr:first-child th {
+            background: #4f46e5;
+            color: white;
+            font-weight: bold;
+        }
+
+        thead tr:nth-child(2) th {
+            background: #6366f1;
+            color: white;
+        }
+
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        tbody td:first-child {
+            background: #f3f4f6;
+            font-weight: bold;
+        }
+
+        .cell-shift {
+            background: #d1fae5;
+            color: #065f46;
+            font-weight: 600;
+        }
+
+        .cell-reduce {
+            background: #dbeafe;
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        .cell-accept {
+            background: #fef3c7;
+            color: #92400e;
+            font-weight: bold;
+        }
+
+        .cell-goto {
+            background: #f3e8ff;
+            color: #6b21a8;
+            font-weight: 600;
+        }
+
+        .cell-empty {
+            background: #f9fafb;
+            color: #d1d5db;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-play {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-play:hover:not(:disabled) {
+            background: #059669;
+        }
+
+        .btn-nav {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-nav:hover:not(:disabled) {
+            background: #4338ca;
+        }
+
+        .btn-reset {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #4b5563;
+        }
+
+        .progress-container {
+            margin-bottom: 24px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4f46e5;
+            transition: width 0.3s;
+        }
+
+        .current-step {
+            background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+            border: 2px solid #c7d2fe;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .step-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .step-item label {
+            display: block;
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .step-item .value {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+
+        .step-stack { color: #312e81; }
+        .step-input { color: #065f46; }
+        .step-action-shift { background: #d1fae5; color: #065f46; }
+        .step-action-reduce { background: #dbeafe; color: #1e40af; }
+        .step-action-accept { background: #fef3c7; color: #92400e; }
+
+        .step-explanation {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            color: #374151;
+        }
+
+        .steps-table {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .steps-table table {
+            width: 100%;
+        }
+
+        .steps-table tbody tr {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .steps-table tbody tr.current {
+            background: #eef2ff;
+            border: 2px solid #c7d2fe;
+        }
+
+        .steps-table tbody tr.completed {
+            background: #f9fafb;
+        }
+
+        .steps-table td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        .steps-table td:first-child {
+            font-weight: bold;
+            text-align: center;
+            width: 60px;
+        }
+
+        .steps-table .col-stack,
+        .steps-table .col-input,
+        .steps-table .col-action {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .footer {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .step-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Analizador Sintáctico LR(1)</h1>
+            <p>Demostración Interactiva - Cadena: <span class="input-string">id + id * id</span></p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="card">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('grammar')">📚 Gramática</button>
+                <button class="tab" onclick="showTab('states')">🔄 Estados</button>
+                <button class="tab" onclick="showTab('table')">📊 Tabla LR(1)</button>
+                <button class="tab" onclick="showTab('parse')">▶️ Análisis</button>
+            </div>
+
+            <div class="tab-content">
+                <!-- Grammar Tab -->
+                <div id="grammar-panel" class="tab-panel active">
+                    <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Gramática de Expresiones Aritméticas</h2>
+                    <div class="grammar-list">
+                        <div class="grammar-item"><span class="production-id">(0)</span> S' → E</div>
+                        <div class="grammar-item"><span class="production-id">(1)</span> E → E + T</div>
+                        <div class="grammar-item"><span class="production-id">(2)</span> E → T</div>
+                        <div class="grammar-item"><span class="production-id">(3)</span> T → T * F</div>
+                        <div class="grammar-item"><span class="production-id">(4)</span> T → F</div>
+                        <div class="grammar-item"><span class="production-id">(5)</span> F → ( E )</div>
+                        <div class="grammar-item"><span class="production-id">(6)</span> F → id</div>
+                    </div>
+                    <div class="info-box">
+                        <strong>Objetivo:</strong> Analizar la cadena <span style="font-family: 'Courier New', monospace; font-weight: bold;">id + id * id</span> y verificar si pertenece al lenguaje generado por esta gramática.
+                    </div>
+                </div>
+
+                <!-- States Tab -->
+                <div id="states-panel" class="tab-panel">
+                    <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Estados Clave del Autómata LR(1)</h2>
+                    <div class="states-grid">
+                        <div class="state-card">
+                            <h3>I₀ (Estado Inicial)</h3>
+                            <div class="state-item">S' → •E, $</div>
+                            <div class="state-item">E → •E + T, $</div>
+                            <div class="state-item">E → •T, $</div>
+                            <div class="state-item">T → •T * F, $</div>
+                            <div class="state-item">T → •F, $</div>
+                            <div class="state-item">F → •( E ), $</div>
+                            <div class="state-item">F → •id, $</div>
+                        </div>
+                        <div class="state-card">
+                            <h3>I₁ (después de E)</h3>
+                            <div class="state-item">S' → E•, $</div>
+                            <div class="state-item">E → E• + T, $</div>
+                        </div>
+                        <div class="state-card">
+                            <h3>I₅ (después de id)</h3>
+                            <div class="state-item">F → id•, $</div>
+                        </div>
+                        <div class="state-card">
+                            <h3>I₁₃ (después de E+T)</h3>
+                            <div class="state-item">E → E + T•, $</div>
+                            <div class="state-item">T → T• * F, $</div>
+                        </div>
+                    </div>
+                    <div class="warning-box">
+                        <strong>Nota:</strong> El autómata completo tiene 35 estados. Aquí mostramos solo los estados más relevantes para entender el funcionamiento del análisis.
+                    </div>
+                </div>
+
+                <!-- Table Tab -->
+                <div id="table-panel" class="tab-panel">
+                    <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Tabla de Análisis Sintáctico LR(1)</h2>
+                    <div class="table-container">
+                        <table id="parse-table"></table>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #d1fae5; border: 1px solid #6ee7b7;"></div>
+                            <span><strong>dN:</strong> Desplazar</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #dbeafe; border: 1px solid #93c5fd;"></div>
+                            <span><strong>rN:</strong> Reducir</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #fef3c7; border: 1px solid #fcd34d;"></div>
+                            <span><strong>acc:</strong> Aceptar</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #f3e8ff; border: 1px solid #d8b4fe;"></div>
+                            <span><strong>N:</strong> Ir a estado</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parse Tab -->
+                <div id="parse-panel" class="tab-panel">
+                    <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Traza del Análisis Sintáctico</h2>
+                    
+                    <div class="controls">
+                        <button class="btn btn-play" id="play-btn" onclick="playAnimation()">▶️ Reproducir</button>
+                        <button class="btn btn-nav" id="prev-btn" onclick="prevStep()">◀️ Anterior</button>
+                        <button class="btn btn-nav" id="next-btn" onclick="nextStep()">Siguiente ▶️</button>
+                        <button class="btn btn-reset" onclick="resetAnimation()">🔄 Reiniciar</button>
+                    </div>
+
+                    <div class="progress-container">
+                        <div class="progress-info">
+                            <span id="progress-text">Paso 1 de 14</span>
+                            <span id="progress-percent">7%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="current-step">
+                        <div class="step-grid">
+                            <div class="step-item">
+                                <label>Pila:</label>
+                                <div class="value step-stack" id="current-stack">0</div>
+                            </div>
+                            <div class="step-item">
+                                <label>Entrada:</label>
+                                <div class="value step-input" id="current-input">id+id*id$</div>
+                            </div>
+                            <div class="step-item">
+                                <label>Acción:</label>
+                                <div class="value step-action-shift" id="current-action">desplazar 5</div>
+                            </div>
+                        </div>
+                        <div class="step-explanation">
+                            <strong>Explicación:</strong> <span id="current-explanation">Lee 'id' y apila estado 5</span>
+                        </div>
+                    </div>
+
+                    <div class="steps-table" id="steps-table-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Análisis Sintáctico LR(1) - Material Educativo Interactivo</p>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        const parseTable = [
+            { state: 0, id: 'd5', plus: '-', mult: '-', dollar: '-', E: '1', T: '2', F: '3' },
+            { state: 1, id: '-', plus: 'd6', mult: '-', dollar: 'acc', E: '-', T: '-', F: '-' },
+            { state: 2, id: '-', plus: 'r2', mult: 'd7', dollar: 'r2', E: '-', T: '-', F: '-' },
+            { state: 3, id: '-', plus: 'r4', mult: 'r4', dollar: 'r4', E: '-', T: '-', F: '-' },
+            { state: 5, id: '-', plus: 'r6', mult: 'r6', dollar: 'r6', E: '-', T: '-', F: '-' },
+            { state: 6, id: 'd16', plus: '-', mult: '-', dollar: '-', E: '-', T: '13', F: '14' },
+            { state: 13, id: '-', plus: 'r1', mult: 'd23', dollar: 'r1', E: '-', T: '-', F: '-' },
+            { state: 14, id: '-', plus: 'r4', mult: 'r4', dollar: 'r4', E: '-', T: '-', F: '-' },
+            { state: 16, id: '-', plus: 'r6', mult: 'r6', dollar: 'r6', E: '-', T: '-', F: '-' },
+            { state: 23, id: 'd33', plus: '-', mult: '-', dollar: '-', E: '-', T: '-', F: '31' },
+            { state: 31, id: '-', plus: 'r3', mult: 'r3', dollar: 'r3', E: '-', T: '-', F: '-' },
+            { state: 33, id: '-', plus: 'r6', mult: 'r6', dollar: 'r6', E: '-', T: '-', F: '-' }
+        ];
+
+        const parseSteps = [
+            { step: 1, stack: "0", input: "id+id*id$", action: "desplazar 5", description: "Lee 'id' y apila estado 5" },
+            { step: 2, stack: "0 id 5", input: "+id*id$", action: "reducir F→id", description: "Reduce por producción 6" },
+            { step: 3, stack: "0 F 3", input: "+id*id$", action: "reducir T→F", description: "Reduce por producción 4" },
+            { step: 4, stack: "0 T 2", input: "+id*id$", action: "reducir E→T", description: "Reduce por producción 2" },
+            { step: 5, stack: "0 E 1", input: "+id*id$", action: "desplazar 6", description: "Lee '+' y apila estado 6" },
+            { step: 6, stack: "0 E 1 + 6", input: "id*id$", action: "desplazar 16", description: "Lee 'id' y apila estado 16" },
+            { step: 7, stack: "0 E 1 + 6 id 16", input: "*id$", action: "reducir F→id", description: "Reduce por producción 6" },
+            { step: 8, stack: "0 E 1 + 6 F 14", input: "*id$", action: "reducir T→F", description: "Reduce por producción 4" },
+            { step: 9, stack: "0 E 1 + 6 T 13", input: "*id$", action: "desplazar 23", description: "Lee '*' y apila estado 23" },
+            { step: 10, stack: "0 E 1 + 6 T 13 * 23", input: "id$", action: "desplazar 33", description: "Lee 'id' y apila estado 33" },
+            { step: 11, stack: "0 E 1 + 6 T 13 * 23 id 33", input: "$", action: "reducir F→id", description: "Reduce por producción 6" },
+            { step: 12, stack: "0 E 1 + 6 T 13 * 23 F 31", input: "$", action: "reducir T→T*F", description: "Reduce por producción 3" },
+            { step: 13, stack: "0 E 1 + 6 T 13", input: "$", action: "reducir E→E+T", description: "Reduce por producción 1" },
+            { step: 14, stack: "0 E 1", input: "$", action: "ACEPTAR ✓", description: "Análisis completado con éxito" }
+        ];
+
+        let currentStep = 0;
+        let isPlaying = false;
+        let playInterval = null;
+
+        // Tab Navigation
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update panels
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(tabName + '-panel').classList.add('active');
+        }
+
+        // Initialize Parse Table
+        function initParseTable() {
+            const table = document.getElementById('parse-table');
+            let html = `
+                <thead>
+                    <tr>
+                        <th rowspan="2">Estado</th>
+                        <th colspan="4">Acción</th>
+                        <th colspan="3">Ir a</th>
+                    </tr>
+                    <tr>
+                        <th>id</th>
+                        <th>+</th>
+                        <th>*</th>
+                        <th>$</th>
+                        <th>E</th>
+                        <th>T</th>
+                        <th>F</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            parseTable.forEach(row => {
+                html += `<tr>
+                    <td>${row.state}</td>
+                    <td class="${getCellClass(row.id)}">${row.id}</td>
+                    <td class="${getCellClass(row.plus)}">${row.plus}</td>
+                    <td class="${getCellClass(row.mult)}">${row.mult}</td>
+                    <td class="${getCellClass(row.dollar)}">${row.dollar}</td>
+                    <td class="${getCellClass(row.E)}">${row.E}</td>
+                    <td class="${getCellClass(row.T)}">${row.T}</td>
+                    <td class="${getCellClass(row.F)}">${row.F}</td>
+                </tr>`;
+            });
+
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        function getCellClass(value) {
+            if (value === '-') return 'cell-empty';
+            if (value.startsWith('d')) return 'cell-shift';
+            if (value.startsWith('r')) return 'cell-reduce';
+            if (value === 'acc') return 'cell-accept';
+            return 'cell-goto';
+        }
+
+        // Initialize Steps Table
+        function initStepsTable() {
+            const container = document.getElementById('steps-table-container');
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Paso</th>
+                            <th>Pila</th>
+                            <th>Entrada</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            parseSteps.forEach((step, idx) => {
+                const rowClass = idx === currentStep ? 'current' : idx < currentStep ? 'completed' : '';
+                html += `<tr class="${rowClass}" id="step-row-${idx}">
+                    <td>${step.step}</td>
+                    <td class="col-stack">${step.stack}</td>
+                    <td class="col-input">${step.input}</td>
+                    <td class="col-action">${step.action}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Update Current Step Display
+        function updateCurrentStep() {
+            const step = parseSteps[currentStep];
+            
+            document.getElementById('current-stack').textContent = step.stack;
+            document.getElementById('current-input').textContent = step.input;
+            document.getElementById('current-action').textContent = step.action;
+            document.getElementById('current-explanation').textContent = step.description;
+
+            // Update action styling
+            const actionEl = document.getElementById('current-action');
+            actionEl.className = 'value';
+            if (step.action.includes('desplazar')) {
+                actionEl.classList.add('step-action-shift');
+            } else if (step.action.includes('reducir')) {
+                actionEl.classList.add('step-action-reduce');
+            } else if (step.action.includes('ACEPTAR')) {
+                actionEl.classList.add('step-action-accept');
+            }
+
+            // Update progress
+            const progress = ((currentStep + 1) / parseSteps.length) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            document.getElementById('progress-text').textContent = `Paso ${currentStep + 1} de ${parseSteps.length}`;
+            document.getElementById('progress-percent').textContent = Math.round(progress) + '%';
+
+            // Update table rows
+            document.querySelectorAll('.steps-table tbody tr').forEach((row, idx) => {
+                row.className = '';
+                if (idx === currentStep) row.classList.add('current');
+                else if (idx < currentStep) row.classList.add('completed');
+            });
+
+            // Update buttons
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('next-btn').disabled = currentStep === parseSteps.length - 1;
+        }
+
+        // Navigation Functions
+        function nextStep() {
+            if (currentStep < parseSteps.length - 1) {
+                currentStep++;
+                updateCurrentStep();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateCurrentStep();
+            }
+        }
+
+        function resetAnimation() {
+            stopAnimation();
+            currentStep = 0;
+            updateCurrentStep();
+        }
+
+        function playAnimation() {
+            if (currentStep === parseSteps.length - 1) {
+                currentStep = 0;
+            }
+            
+            isPlaying = true;
+            document.getElementById('play-btn').disabled = true;
+            document.getElementById('play-btn').textContent = '⏸️ Reproduciendo...';
+            
+            playInterval = setInterval(() => {
+                if (currentStep < parseSteps.length - 1) {
+                    currentStep++;
+                    updateCurrentStep();
+                } else {
+                    stopAnimation();
+                }
+            }, 1500);
+        }
+
+        function stopAnimation() {
+            isPlaying = false;
+            clearInterval(playInterval);
+            document.getElementById('play-btn').disabled = false;
+            document.getElementById('play-btn').textContent = '▶️ Reproducir';
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initParseTable();
+            initStepsTable();
+            updateCurrentStep();
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const activeTab = document.querySelector('.tab-panel.active').id;
+            if (activeTab === 'parse-panel') {
+                if (e.key === 'ArrowRight') nextStep();
+                if (e.key === 'ArrowLeft') prevStep();
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    if (isPlaying) stopAnimation();
+                    else playAnimation();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
