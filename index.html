@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analizador Sintáctico LR(1) Interactivo</title>
+    <title>Analizador Sintáctico LR(1) Completo</title>
     <style>
         * {
             margin: 0;
@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -138,58 +138,69 @@
 
         .states-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            max-height: 600px;
+            overflow-y: auto;
         }
 
         .state-card {
             background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
             border: 2px solid #c7d2fe;
             border-radius: 8px;
-            padding: 24px;
+            padding: 16px;
         }
 
         .state-card h3 {
             color: #312e81;
-            margin-bottom: 16px;
-            font-size: 1.2rem;
+            margin-bottom: 12px;
+            font-size: 1rem;
         }
 
         .state-item {
             font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             background: white;
-            padding: 8px;
-            margin-bottom: 8px;
+            padding: 6px;
+            margin-bottom: 6px;
             border-radius: 4px;
             color: #374151;
         }
 
         .table-container {
             overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 600px;
+            min-width: 800px;
         }
 
         th, td {
-            padding: 12px;
+            padding: 8px;
             text-align: center;
             border: 1px solid #e5e7eb;
+            font-size: 0.85rem;
         }
 
         thead tr:first-child th {
             background: #4f46e5;
             color: white;
             font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         thead tr:nth-child(2) th {
             background: #6366f1;
             color: white;
+            position: sticky;
+            top: 40px;
+            z-index: 10;
         }
 
         tbody tr:hover {
@@ -199,6 +210,8 @@
         tbody td:first-child {
             background: #f3f4f6;
             font-weight: bold;
+            position: sticky;
+            left: 0;
         }
 
         .cell-shift {
@@ -415,6 +428,71 @@
             font-size: 0.9rem;
         }
 
+        /* Árbol Sintáctico */
+        .tree-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            background: #f9fafb;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .tree {
+            position: relative;
+        }
+
+        .tree-node {
+            position: relative;
+            display: inline-block;
+            text-align: center;
+            padding: 10px 20px;
+            margin: 10px;
+        }
+
+        .node-content {
+            background: white;
+            border: 3px solid #4f46e5;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-weight: bold;
+            color: #312e81;
+            font-size: 1.1rem;
+            display: inline-block;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .node-terminal {
+            background: #d1fae5;
+            border-color: #059669;
+            color: #065f46;
+        }
+
+        .tree-children {
+            display: flex;
+            justify-content: center;
+            margin-top: 40px;
+            position: relative;
+        }
+
+        .tree-line {
+            position: absolute;
+            top: -30px;
+            height: 30px;
+            width: 2px;
+            background: #4f46e5;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .tree-horizontal-line {
+            position: absolute;
+            top: -30px;
+            height: 2px;
+            background: #4f46e5;
+        }
+
         .footer {
             background: white;
             border-radius: 12px;
@@ -436,6 +514,10 @@
             .step-grid {
                 grid-template-columns: 1fr;
             }
+
+            .states-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -444,17 +526,18 @@
         <!-- Header -->
         <div class="header">
             <h1>Analizador Sintáctico LR(1)</h1>
-            <p>Demostración Interactiva - Cadena: <span class="input-string">id + id * id</span></p>
+            <p>35 Estados del Autómata - Cadena: <span class="input-string">id + id * id</span></p>
         </div>
 
         <!-- Main Card -->
         <div class="card">
             <!-- Tabs -->
             <div class="tabs">
-                <button class="tab active" onclick="showTab('grammar')">📚 Gramática</button>
-                <button class="tab" onclick="showTab('states')">🔄 Estados</button>
-                <button class="tab" onclick="showTab('table')">📊 Tabla LR(1)</button>
-                <button class="tab" onclick="showTab('parse')">▶️ Análisis</button>
+                <button class="tab active" onclick="showTab('grammar')">Gramática</button>
+                <button class="tab" onclick="showTab('states')">Estados</button>
+                <button class="tab" onclick="showTab('table')">Tabla</button>
+                <button class="tab" onclick="showTab('parse')">Análisis</button>
+                <button class="tab" onclick="showTab('tree')">Árbol</button>
             </div>
 
             <div class="tab-content">
@@ -471,47 +554,22 @@
                         <div class="grammar-item"><span class="production-id">(6)</span> F → id</div>
                     </div>
                     <div class="info-box">
-                        <strong>Objetivo:</strong> Analizar la cadena <span style="font-family: 'Courier New', monospace; font-weight: bold;">id + id * id</span> y verificar si pertenece al lenguaje generado por esta gramática.
+                        <strong>Objetivo:</strong> Analizar la cadena <span style="font-family: 'Courier New', monospace; font-weight: bold;">id + id * id</span> y verificar si pertenece al lenguaje generado por esta gramática. Este es el autómata LR(1) completo con los 35 estados.
                     </div>
                 </div>
 
                 <!-- States Tab -->
                 <div id="states-panel" class="tab-panel">
-                    <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Estados Clave del Autómata LR(1)</h2>
-                    <div class="states-grid">
-                        <div class="state-card">
-                            <h3>I₀ (Estado Inicial)</h3>
-                            <div class="state-item">S' → •E, $</div>
-                            <div class="state-item">E → •E + T, $</div>
-                            <div class="state-item">E → •T, $</div>
-                            <div class="state-item">T → •T * F, $</div>
-                            <div class="state-item">T → •F, $</div>
-                            <div class="state-item">F → •( E ), $</div>
-                            <div class="state-item">F → •id, $</div>
-                        </div>
-                        <div class="state-card">
-                            <h3>I₁ (después de E)</h3>
-                            <div class="state-item">S' → E•, $</div>
-                            <div class="state-item">E → E• + T, $</div>
-                        </div>
-                        <div class="state-card">
-                            <h3>I₅ (después de id)</h3>
-                            <div class="state-item">F → id•, $</div>
-                        </div>
-                        <div class="state-card">
-                            <h3>I₁₃ (después de E+T)</h3>
-                            <div class="state-item">E → E + T•, $</div>
-                            <div class="state-item">T → T• * F, $</div>
-                        </div>
-                    </div>
-                    <div class="warning-box">
-                        <strong>Nota:</strong> El autómata completo tiene 35 estados. Aquí mostramos solo los estados más relevantes para entender el funcionamiento del análisis.
-                    </div>
+                    <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Todos los Estados del Autómata LR(1)</h2>
+                    <div class="states-grid" id="all-states"></div>
                 </div>
 
                 <!-- Table Tab -->
                 <div id="table-panel" class="tab-panel">
-                    <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Tabla de Análisis Sintáctico LR(1)</h2>
+                    <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Tabla de Análisis Sintáctico LR(1) Completa</h2>
+                    <div class="warning-box" style="margin-bottom: 20px;">
+                        <strong>Nota:</strong> Esta es la tabla completa con todos los estados. Usa scroll para ver todos los estados.
+                    </div>
                     <div class="table-container">
                         <table id="parse-table"></table>
                     </div>
@@ -540,10 +598,10 @@
                     <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Traza del Análisis Sintáctico</h2>
                     
                     <div class="controls">
-                        <button class="btn btn-play" id="play-btn" onclick="playAnimation()">▶️ Reproducir</button>
-                        <button class="btn btn-nav" id="prev-btn" onclick="prevStep()">◀️ Anterior</button>
-                        <button class="btn btn-nav" id="next-btn" onclick="nextStep()">Siguiente ▶️</button>
-                        <button class="btn btn-reset" onclick="resetAnimation()">🔄 Reiniciar</button>
+                        <button class="btn btn-play" id="play-btn" onclick="playAnimation()">Reproducir</button>
+                        <button class="btn btn-nav" id="prev-btn" onclick="prevStep()">Anterior</button>
+                        <button class="btn btn-nav" id="next-btn" onclick="nextStep()">Siguiente</button>
+                        <button class="btn btn-reset" onclick="resetAnimation()">Reiniciar</button>
                     </div>
 
                     <div class="progress-container">
@@ -578,47 +636,218 @@
 
                     <div class="steps-table" id="steps-table-container"></div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Footer -->
-        <div class="footer">
-            <p>Análisis Sintáctico LR(1) - Material Educativo Interactivo</p>
+                <!-- Tree Tab -->
+                <div id="tree-panel" class="tab-panel">
+                    <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Árbol Sintáctico Resultante</h2>
+                    <div class="info-box" style="margin-bottom: 20px;">
+                        <strong>Árbol de derivación</strong> para la cadena <span style="font-family: 'Courier New', monospace; font-weight: bold;">id + id * id</span>. 
+                        Los nodos azules representan no terminales y los verdes representan terminales.
+                    </div>
+                    <div class="tree-container">
+                        <svg width="800" height="600" style="background: white; border-radius: 8px;">
+                            <!-- S' -->
+                            <g>
+                                <rect x="370" y="20" width="60" height="40" fill="#4f46e5" stroke="#312e81" stroke-width="2" rx="5"/>
+                                <text x="400" y="45" text-anchor="middle" fill="white" font-weight="bold" font-size="16">S'</text>
+                                <line x1="400" y1="60" x2="400" y2="90" stroke="#4f46e5" stroke-width="2"/>
+                            </g>
+
+                            <!-- E (raíz) -->
+                            <g>
+                                <rect x="370" y="90" width="60" height="40" fill="#4f46e5" stroke="#312e81" stroke-width="2" rx="5"/>
+                                <text x="400" y="115" text-anchor="middle" fill="white" font-weight="bold" font-size="16">E</text>
+                                <line x1="400" y1="130" x2="200" y2="170" stroke="#4f46e5" stroke-width="2"/>
+                                <line x1="400" y1="130" x2="400" y2="170" stroke="#4f46e5" stroke-width="2"/>
+                                <line x1="400" y1="130" x2="600" y2="170" stroke="#4f46e5" stroke-width="2"/>
+                            </g>
+
+                            <!-- E (izquierda) -->
+                            <g>
+                                <rect x="170" y="170" width="60" height="40" fill="#4f46e5" stroke="#312e81" stroke-width="2" rx="5"/>
+                                <text x="200" y="195" text-anchor="middle" fill="white" font-weight="bold" font-size="16">E</text>
+                                <line x1="200" y1="210" x2="200" y2="240" stroke="#4f46e5" stroke-width="2"/>
+                            </g>
+
+                            <!-- + -->
+                            <g>
+                                <rect x="370" y="170" width="60" height="40" fill="#d1fae5" stroke="#059669" stroke-width="2" rx="5"/>
+                                <text x="400" y="195" text-anchor="middle" fill="#065f46" font-weight="bold" font-size="16">+</text>
+                            </g>
+
+                            <!-- T (derecha) -->
+                            <g>
+                                <rect x="570" y="170" width="60" height="40" fill="#4f46e5" stroke="#312e81" stroke-width="2" rx="5"/>
+                                <text x="600" y="195" text-anchor="middle" fill="white" font-weight="bold" font-size="16">T</text>
+                                <line x1="600" y1="210" x2="530" y2="240" stroke="#4f46e5" stroke-width="2"/>
+                                <line x1="600" y1="210" x2="600" y2="240" stroke="#4f46e5" stroke-width="2"/>
+                                <line x1="600" y1="210" x2="670" y2="240" stroke="#4f46e5" stroke-width="2"/>
+                            </g>
+
+                            <!-- T (de E izquierda) -->
+                            <g>
+                                <rect x="170" y="240" width="60" height="40" fill="#4f46e5" stroke="#312e81" stroke-width="2" rx="5"/>
+                                <text x="200" y="265" text-anchor="middle" fill="white" font-weight="bold" font-size="16">T</text>
+                                <line x1="200" y1="280" x2="200" y2="310" stroke="#4f46e5" stroke-width="2"/>
+                            </g>
+
+                            <!-- T (izquierda de *) -->
+                            <g>
+                                <rect x="500" y="240" width="60" height="40" fill="#4f46e5" stroke="#312e81" stroke-width="2" rx="5"/>
+                                <text x="530" y="265" text-anchor="middle" fill="white" font-weight="bold" font-size="16">T</text>
+                                <line x1="530" y1="280" x2="530" y2="310" stroke="#4f46e5" stroke-width="2"/>
+                            </g>
+
+                            <!-- * -->
+                            <g>
+                                <rect x="570" y="240" width="60" height="40" fill="#d1fae5" stroke="#059669" stroke-width="2" rx="5"/>
+                                <text x="600" y="265" text-anchor="middle" fill="#065f46" font-weight="bold" font-size="16">*</text>
+                            </g>
+
+                            <!-- F (derecha de *) -->
+                            <g>
+                                <rect x="640" y="240" width="60" height="40" fill="#4f46e5" stroke="#312e81" stroke-width="2" rx="5"/>
+                                <text x="670" y="265" text-anchor="middle" fill="white" font-weight="bold" font-size="16">F</text>
+                                <line x1="670" y1="280" x2="670" y2="310" stroke="#4f46e5" stroke-width="2"/>
+                            </g>
+
+                            <!-- F (de T izquierda) -->
+                            <g>
+                                <rect x="170" y="310" width="60" height="40" fill="#4f46e5" stroke="#312e81" stroke-width="2" rx="5"/>
+                                <text x="200" y="335" text-anchor="middle" fill="white" font-weight="bold" font-size="16">F</text>
+                                <line x1="200" y1="350" x2="200" y2="380" stroke="#4f46e5" stroke-width="2"/>
+                            </g>
+
+                            <!-- F (de T medio) -->
+                            <g>
+                                <rect x="500" y="310" width="60" height="40" fill="#4f46e5" stroke="#312e81" stroke-width="2" rx="5"/>
+                                <text x="530" y="335" text-anchor="middle" fill="white" font-weight="bold" font-size="16">F</text>
+                                <line x1="530" y1="350" x2="530" y2="380" stroke="#4f46e5" stroke-width="2"/>
+                            </g>
+
+                            <!-- id (izquierda) -->
+                            <g>
+                                <rect x="170" y="380" width="60" height="40" fill="#d1fae5" stroke="#059669" stroke-width="2" rx="5"/>
+                                <text x="200" y="405" text-anchor="middle" fill="#065f46" font-weight="bold" font-size="16">id</text>
+                            </g>
+
+                            <!-- id (medio) -->
+                            <g>
+                                <rect x="500" y="380" width="60" height="40" fill="#d1fae5" stroke="#059669" stroke-width="2" rx="5"/>
+                                <text x="530" y="405" text-anchor="middle" fill="#065f46" font-weight="bold" font-size="16">id</text>
+                            </g>
+
+                            <!-- id (derecha) -->
+                            <g>
+                                <rect x="640" y="310" width="60" height="40" fill="#d1fae5" stroke="#059669" stroke-width="2" rx="5"/>
+                                <text x="670" y="335" text-anchor="middle" fill="#065f46" font-weight="bold" font-size="16">id</text>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="info-box" style="margin-top: 20px;">
+                        <strong>Interpretación:</strong> El árbol muestra cómo se deriva la expresión <code>id + id * id</code>. 
+                        Note que la multiplicación (*) se agrupa primero debido a su mayor precedencia, resultando en la estructura 
+                        <code>id + (id * id)</code>.
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Data
-        const parseTable = [
-            { state: 0, id: 'd5', plus: '-', mult: '-', dollar: '-', E: '1', T: '2', F: '3' },
-            { state: 1, id: '-', plus: 'd6', mult: '-', dollar: 'acc', E: '-', T: '-', F: '-' },
-            { state: 2, id: '-', plus: 'r2', mult: 'd7', dollar: 'r2', E: '-', T: '-', F: '-' },
-            { state: 3, id: '-', plus: 'r4', mult: 'r4', dollar: 'r4', E: '-', T: '-', F: '-' },
-            { state: 5, id: '-', plus: 'r6', mult: 'r6', dollar: 'r6', E: '-', T: '-', F: '-' },
-            { state: 6, id: 'd16', plus: '-', mult: '-', dollar: '-', E: '-', T: '13', F: '14' },
-            { state: 13, id: '-', plus: 'r1', mult: 'd23', dollar: 'r1', E: '-', T: '-', F: '-' },
-            { state: 14, id: '-', plus: 'r4', mult: 'r4', dollar: 'r4', E: '-', T: '-', F: '-' },
-            { state: 16, id: '-', plus: 'r6', mult: 'r6', dollar: 'r6', E: '-', T: '-', F: '-' },
-            { state: 23, id: 'd33', plus: '-', mult: '-', dollar: '-', E: '-', T: '-', F: '31' },
-            { state: 31, id: '-', plus: 'r3', mult: 'r3', dollar: 'r3', E: '-', T: '-', F: '-' },
-            { state: 33, id: '-', plus: 'r6', mult: 'r6', dollar: 'r6', E: '-', T: '-', F: '-' }
+        // Todos los 35 estados del autómata LR(1)
+        const allStates = [
+            { id: 0, items: ["S' → •E, $", "E → •E + T, $", "E → •T, $", "T → •T * F, $", "T → •F, $", "F → •( E ), $", "F → •id, $"] },
+            { id: 1, items: ["S' → E•, $", "E → E• + T, $"] },
+            { id: 2, items: ["E → T•, $", "T → T• * F, $"] },
+            { id: 3, items: ["T → F•, $"] },
+            { id: 4, items: ["F → (•E), $", "E → •E + T, )", "E → •T, )", "T → •T * F, )", "T → •F, )", "F → •( E ), )", "F → •id, )"] },
+            { id: 5, items: ["F → id•, $"] },
+            { id: 6, items: ["E → E +•T, $", "T → •T * F, $", "T → •F, $", "F → •( E ), $", "F → •id, $"] },
+            { id: 7, items: ["T → T *•F, $", "F → •( E ), $", "F → •id, $"] },
+            { id: 8, items: ["F → (E•), $", "E → E• + T, )"] },
+            { id: 9, items: ["E → T•, )", "T → T• * F, )"] },
+            { id: 10, items: ["T → F•, )"] },
+            { id: 11, items: ["F → (•E), )", "E → •E + T, )", "E → •T, )", "T → •T * F, )", "T → •F, )", "F → •( E ), )", "F → •id, )"] },
+            { id: 12, items: ["F → id•, )"] },
+            { id: 13, items: ["E → E + T•, $", "T → T• * F, $"] },
+            { id: 14, items: ["T → F•, $"] },
+            { id: 15, items: ["F → (•E), $", "E → •E + T, )", "E → •T, )", "T → •T * F, )", "T → •F, )", "F → •( E ), )", "F → •id, )"] },
+            { id: 16, items: ["F → id•, $"] },
+            { id: 17, items: ["T → T * F•, $"] },
+            { id: 18, items: ["F → (•E), $", "E → •E + T, )", "E → •T, )", "T → •T * F, )", "T → •F, )", "F → •( E ), )", "F → •id, )"] },
+            { id: 19, items: ["F → id•, $"] },
+            { id: 20, items: ["F → ( E )•, $"] },
+            { id: 21, items: ["E → E +•T, )", "T → •T * F, )", "T → •F, )", "F → •( E ), )", "F → •id, )"] },
+            { id: 22, items: ["T → T *•F, )", "F → •( E ), )", "F → •id, )"] },
+            { id: 23, items: ["T → T *•F, $", "F → •( E ), $", "F → •id, $"] },
+            { id: 24, items: ["E → E + T•, )", "T → T• * F, )"] },
+            { id: 25, items: ["T → F•, )"] },
+            { id: 26, items: ["F → (•E), )", "E → •E + T, )", "E → •T, )", "T → •T * F, )", "T → •F, )", "F → •( E ), )", "F → •id, )"] },
+            { id: 27, items: ["F → id•, )"] },
+            { id: 28, items: ["T → T * F•, )"] },
+            { id: 29, items: ["F → (•E), )", "E → •E + T, )", "E → •T, )", "T → •T * F, )", "T → •F, )", "F → •( E ), )", "F → •id, )"] },
+            { id: 30, items: ["F → id•, )"] },
+            { id: 31, items: ["T → T * F•, $"] },
+            { id: 32, items: ["F → (•E), $", "E → •E + T, )", "E → •T, )", "T → •T * F, )", "T → •F, )", "F → •( E ), )", "F → •id, )"] },
+            { id: 33, items: ["F → id•, $"] },
+            { id: 34, items: ["T → T *•F, )", "F → •( E ), )", "F → •id, )"] }
+        ];
+
+        // Tabla de análisis completa con los 35 estados
+        const parseTableComplete = [
+            { state: 0, id: 'd5', plus: '-', mult: '-', lparen: 'd4', rparen: '-', dollar: '-', E: '1', T: '2', F: '3' },
+            { state: 1, id: '-', plus: 'd6', mult: '-', lparen: '-', rparen: '-', dollar: 'acc', E: '-', T: '-', F: '-' },
+            { state: 2, id: '-', plus: 'r2', mult: 'd7', lparen: '-', rparen: '-', dollar: 'r2', E: '-', T: '-', F: '-' },
+            { state: 3, id: '-', plus: 'r4', mult: 'r4', lparen: '-', rparen: '-', dollar: 'r4', E: '-', T: '-', F: '-' },
+            { state: 4, id: 'd12', plus: '-', mult: '-', lparen: 'd11', rparen: '-', dollar: '-', E: '8', T: '9', F: '10' },
+            { state: 5, id: '-', plus: 'r6', mult: 'r6', lparen: '-', rparen: '-', dollar: 'r6', E: '-', T: '-', F: '-' },
+            { state: 6, id: 'd16', plus: '-', mult: '-', lparen: 'd15', rparen: '-', dollar: '-', E: '-', T: '13', F: '14' },
+            { state: 7, id: 'd19', plus: '-', mult: '-', lparen: 'd18', rparen: '-', dollar: '-', E: '-', T: '-', F: '17' },
+            { state: 8, id: '-', plus: 'd21', mult: '-', lparen: '-', rparen: 'd20', dollar: '-', E: '-', T: '-', F: '-' },
+            { state: 9, id: '-', plus: 'r2', mult: 'd22', lparen: '-', rparen: 'r2', dollar: '-', E: '-', T: '-', F: '-' },
+            { state: 10, id: '-', plus: 'r4', mult: 'r4', lparen: '-', rparen: 'r4', dollar: '-', E: '-', T: '-', F: '-' },
+            { state: 11, id: 'd12', plus: '-', mult: '-', lparen: 'd11', rparen: '-', dollar: '-', E: '8', T: '9', F: '10' },
+            { state: 12, id: '-', plus: 'r6', mult: 'r6', lparen: '-', rparen: 'r6', dollar: '-', E: '-', T: '-', F: '-' },
+            { state: 13, id: '-', plus: 'r1', mult: 'd23', lparen: '-', rparen: '-', dollar: 'r1', E: '-', T: '-', F: '-' },
+            { state: 14, id: '-', plus: 'r4', mult: 'r4', lparen: '-', rparen: '-', dollar: 'r4', E: '-', T: '-', F: '-' },
+            { state: 15, id: 'd12', plus: '-', mult: '-', lparen: 'd11', rparen: '-', dollar: '-', E: '8', T: '9', F: '10' },
+            { state: 16, id: '-', plus: 'r6', mult: 'r6', lparen: '-', rparen: '-', dollar: 'r6', E: '-', T: '-', F: '-' },
+            { state: 17, id: '-', plus: 'r3', mult: 'r3', lparen: '-', rparen: '-', dollar: 'r3', E: '-', T: '-', F: '-' },
+            { state: 18, id: 'd12', plus: '-', mult: '-', lparen: 'd11', rparen: '-', dollar: '-', E: '8', T: '9', F: '10' },
+            { state: 19, id: '-', plus: 'r6', mult: 'r6', lparen: '-', rparen: '-', dollar: 'r6', E: '-', T: '-', F: '-' },
+            { state: 20, id: '-', plus: 'r5', mult: 'r5', lparen: '-', rparen: '-', dollar: 'r5', E: '-', T: '-', F: '-' },
+            { state: 21, id: 'd27', plus: '-', mult: '-', lparen: 'd26', rparen: '-', dollar: '-', E: '-', T: '24', F: '25' },
+            { state: 22, id: 'd30', plus: '-', mult: '-', lparen: 'd29', rparen: '-', dollar: '-', E: '-', T: '-', F: '28' },
+            { state: 23, id: 'd33', plus: '-', mult: '-', lparen: 'd32', rparen: '-', dollar: '-', E: '-', T: '-', F: '31' },
+            { state: 24, id: '-', plus: 'r1', mult: 'd34', lparen: '-', rparen: 'r1', dollar: '-', E: '-', T: '-', F: '-' },
+            { state: 25, id: '-', plus: 'r4', mult: 'r4', lparen: '-', rparen: 'r4', dollar: '-', E: '-', T: '-', F: '-' },
+            { state: 26, id: 'd27', plus: '-', mult: '-', lparen: 'd26', rparen: '-', dollar: '-', E: '24', T: '24', F: '25' },
+            { state: 27, id: '-', plus: 'r6', mult: 'r6', lparen: '-', rparen: 'r6', dollar: '-', E: '-', T: '-', F: '-' },
+            { state: 28, id: '-', plus: 'r3', mult: 'r3', lparen: '-', rparen: 'r3', dollar: '-', E: '-', T: '-', F: '-' },
+            { state: 29, id: 'd27', plus: '-', mult: '-', lparen: 'd26', rparen: '-', dollar: '-', E: '24', T: '24', F: '25' },
+            { state: 30, id: '-', plus: 'r6', mult: 'r6', lparen: '-', rparen: 'r6', dollar: '-', E: '-', T: '-', F: '-' },
+            { state: 31, id: '-', plus: 'r3', mult: 'r3', lparen: '-', rparen: '-', dollar: 'r3', E: '-', T: '-', F: '-' },
+            { state: 32, id: 'd27', plus: '-', mult: '-', lparen: 'd26', rparen: '-', dollar: '-', E: '24', T: '24', F: '25' },
+            { state: 33, id: '-', plus: 'r6', mult: 'r6', lparen: '-', rparen: '-', dollar: 'r6', E: '-', T: '-', F: '-' },
+            { state: 34, id: 'd30', plus: '-', mult: '-', lparen: 'd29', rparen: '-', dollar: '-', E: '-', T: '-', F: '28' }
         ];
 
         const parseSteps = [
             { step: 1, stack: "0", input: "id+id*id$", action: "desplazar 5", description: "Lee 'id' y apila estado 5" },
-            { step: 2, stack: "0 id 5", input: "+id*id$", action: "reducir F→id", description: "Reduce por producción 6" },
-            { step: 3, stack: "0 F 3", input: "+id*id$", action: "reducir T→F", description: "Reduce por producción 4" },
-            { step: 4, stack: "0 T 2", input: "+id*id$", action: "reducir E→T", description: "Reduce por producción 2" },
+            { step: 2, stack: "0 id 5", input: "+id*id$", action: "reducir F→id", description: "Reduce por producción 6: F → id" },
+            { step: 3, stack: "0 F 3", input: "+id*id$", action: "reducir T→F", description: "Reduce por producción 4: T → F" },
+            { step: 4, stack: "0 T 2", input: "+id*id$", action: "reducir E→T", description: "Reduce por producción 2: E → T" },
             { step: 5, stack: "0 E 1", input: "+id*id$", action: "desplazar 6", description: "Lee '+' y apila estado 6" },
             { step: 6, stack: "0 E 1 + 6", input: "id*id$", action: "desplazar 16", description: "Lee 'id' y apila estado 16" },
-            { step: 7, stack: "0 E 1 + 6 id 16", input: "*id$", action: "reducir F→id", description: "Reduce por producción 6" },
-            { step: 8, stack: "0 E 1 + 6 F 14", input: "*id$", action: "reducir T→F", description: "Reduce por producción 4" },
+            { step: 7, stack: "0 E 1 + 6 id 16", input: "*id$", action: "reducir F→id", description: "Reduce por producción 6: F → id" },
+            { step: 8, stack: "0 E 1 + 6 F 14", input: "*id$", action: "reducir T→F", description: "Reduce por producción 4: T → F" },
             { step: 9, stack: "0 E 1 + 6 T 13", input: "*id$", action: "desplazar 23", description: "Lee '*' y apila estado 23" },
             { step: 10, stack: "0 E 1 + 6 T 13 * 23", input: "id$", action: "desplazar 33", description: "Lee 'id' y apila estado 33" },
-            { step: 11, stack: "0 E 1 + 6 T 13 * 23 id 33", input: "$", action: "reducir F→id", description: "Reduce por producción 6" },
-            { step: 12, stack: "0 E 1 + 6 T 13 * 23 F 31", input: "$", action: "reducir T→T*F", description: "Reduce por producción 3" },
-            { step: 13, stack: "0 E 1 + 6 T 13", input: "$", action: "reducir E→E+T", description: "Reduce por producción 1" },
-            { step: 14, stack: "0 E 1", input: "$", action: "ACEPTAR ✓", description: "Análisis completado con éxito" }
+            { step: 11, stack: "0 E 1 + 6 T 13 * 23 id 33", input: "$", action: "reducir F→id", description: "Reduce por producción 6: F → id" },
+            { step: 12, stack: "0 E 1 + 6 T 13 * 23 F 31", input: "$", action: "reducir T→T*F", description: "Reduce por producción 3: T → T * F" },
+            { step: 13, stack: "0 E 1 + 6 T 13", input: "$", action: "reducir E→E+T", description: "Reduce por producción 1: E → E + T" },
+            { step: 14, stack: "0 E 1", input: "$", action: "ACEPTAR ✓", description: "¡Análisis completado exitosamente! La cadena pertenece al lenguaje." }
         ];
 
         let currentStep = 0;
@@ -627,13 +856,27 @@
 
         // Tab Navigation
         function showTab(tabName) {
-            // Update tab buttons
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
-
-            // Update panels
             document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
             document.getElementById(tabName + '-panel').classList.add('active');
+        }
+
+        // Initialize All States
+        function initAllStates() {
+            const container = document.getElementById('all-states');
+            let html = '';
+            
+            allStates.forEach(state => {
+                html += `
+                    <div class="state-card">
+                        <h3>Estado I${state.id}</h3>
+                        ${state.items.map(item => `<div class="state-item">${item}</div>`).join('')}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
         }
 
         // Initialize Parse Table
@@ -643,13 +886,15 @@
                 <thead>
                     <tr>
                         <th rowspan="2">Estado</th>
-                        <th colspan="4">Acción</th>
+                        <th colspan="6">Acción</th>
                         <th colspan="3">Ir a</th>
                     </tr>
                     <tr>
                         <th>id</th>
                         <th>+</th>
                         <th>*</th>
+                        <th>(</th>
+                        <th>)</th>
                         <th>$</th>
                         <th>E</th>
                         <th>T</th>
@@ -659,12 +904,14 @@
                 <tbody>
             `;
 
-            parseTable.forEach(row => {
+            parseTableComplete.forEach(row => {
                 html += `<tr>
                     <td>${row.state}</td>
                     <td class="${getCellClass(row.id)}">${row.id}</td>
                     <td class="${getCellClass(row.plus)}">${row.plus}</td>
                     <td class="${getCellClass(row.mult)}">${row.mult}</td>
+                    <td class="${getCellClass(row.lparen)}">${row.lparen}</td>
+                    <td class="${getCellClass(row.rparen)}">${row.rparen}</td>
                     <td class="${getCellClass(row.dollar)}">${row.dollar}</td>
                     <td class="${getCellClass(row.E)}">${row.E}</td>
                     <td class="${getCellClass(row.T)}">${row.T}</td>
@@ -723,7 +970,6 @@
             document.getElementById('current-action').textContent = step.action;
             document.getElementById('current-explanation').textContent = step.description;
 
-            // Update action styling
             const actionEl = document.getElementById('current-action');
             actionEl.className = 'value';
             if (step.action.includes('desplazar')) {
@@ -734,20 +980,17 @@
                 actionEl.classList.add('step-action-accept');
             }
 
-            // Update progress
             const progress = ((currentStep + 1) / parseSteps.length) * 100;
             document.getElementById('progress-fill').style.width = progress + '%';
             document.getElementById('progress-text').textContent = `Paso ${currentStep + 1} de ${parseSteps.length}`;
             document.getElementById('progress-percent').textContent = Math.round(progress) + '%';
 
-            // Update table rows
             document.querySelectorAll('.steps-table tbody tr').forEach((row, idx) => {
                 row.className = '';
                 if (idx === currentStep) row.classList.add('current');
                 else if (idx < currentStep) row.classList.add('completed');
             });
 
-            // Update buttons
             document.getElementById('prev-btn').disabled = currentStep === 0;
             document.getElementById('next-btn').disabled = currentStep === parseSteps.length - 1;
         }
@@ -801,6 +1044,7 @@
 
         // Initialize on load
         window.addEventListener('DOMContentLoaded', () => {
+            initAllStates();
             initParseTable();
             initStepsTable();
             updateCurrentStep();
