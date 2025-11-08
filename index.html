@@ -538,6 +538,7 @@
                 <button class="tab" onclick="showTab('table')">Tabla</button>
                 <button class="tab" onclick="showTab('parse')">Análisis</button>
                 <button class="tab" onclick="showTab('tree')">Árbol</button>
+                <button class="tab" onclick="showTab('example')">Ejemplo</button>
             </div>
 
             <div class="tab-content">
@@ -748,6 +749,19 @@
                         <strong>Interpretación:</strong> El árbol muestra cómo se deriva la expresión <code>id + id * id</code>. 
                         Note que la multiplicación (*) se agrupa primero debido a su mayor precedencia, resultando en la estructura 
                         <code>id + (id * id)</code>.
+                    </div>
+                </div>
+
+                <!-- Example Tab -->
+                <div id="example-panel" class="tab-panel">
+                    <h2 style="color: #1f2937; margin-bottom: 20px; font-size: 1.5rem;">Ejemplo</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-top: 24px;">
+                        <div style="text-align: center;">
+                            <img src="imagen_1.jpeg" alt="Imagen 1" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                        </div>
+                        <div style="text-align: center;">
+                            <img src="imagen_2.jpeg" alt="Imagen 2" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                        </div>
                     </div>
                 </div>
             </div>
